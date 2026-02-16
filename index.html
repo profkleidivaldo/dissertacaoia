@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dissertação RAG</title>
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Georgia, serif;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#menu {
+  width: 260px;
+  background: #2c3e50;
+  color: white;
+  overflow-y: auto;
+  padding: 15px;
+  flex-shrink: 0;
+}
+
+#menu h3 {
+  margin-top: 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #34495e;
+}
+
+.chapter {
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 6px;
+  margin: 5px 0;
+  transition: background 0.2s;
+}
+
+.chapter:hover {
+  background: #34495e;
+}
+
+.chapter.active {
+  background: #667eea;
+}
+
+#content {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+  font-size: 18px;
+  line-height: 1.7;
+  background: #fafafa;
+}
+
+#content h2 {
+  color: #2c3e50;
+  border-bottom: 3px solid #667eea;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+#content p {
+  margin: 15px 0;
+  text-align: justify;
+}
+
+.highlight {
+  background: #ffeb3b;
+  padding: 2px 4px;
+  border-radius: 3px;
+  animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { background: #ffeb3b; }
+  50% { background: #fdd835; }
+}
+
+#controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 5px;
+  z-index: 100;
+}
+
+.btn {
+  padding: 8px 12px;
+  margin: 2px;
+  cursor: pointer;
+  border: none;
+  background: #667eea;
+  color: white;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.btn:hover {
+  background: #5568d3;
+}
+
+#gem-trigger {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 65px;
+  height: 65px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+  z-index: 1000;
+}
+
+#gem-trigger:hover {
+  transform: scale(1.1);
+}
+
+#gem-chat-window {
+  position: fixed;
+  bottom: 95px;
+  right: 20px;
+  width: 380px;
+  height: 520px;
+  background: white;
+  border-radius: 15px;
+  display: none;
+  flex-direction: column;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+  z-index: 999;
+}
+
+#gem-chat-window.active {
+  display: flex;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#gem-header {
+  padding: 15px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 15px 15px 0 0;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#gem-close {
+  cursor: pointer;
+  font-size: 20px;
+  padding: 0 5px;
+}
+
+#gem-messages-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  background: #f5f5f5;
+}
+
+.gem-msg {
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin: 8px 0;
+  max-width: 80%;
+  word-wrap: break-word;
+  line-height: 1.4;
+  font-size: 14px;
+}
+
+.gem-msg.user {
+  background: #667eea;
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 3px;
+}
+
+.gem-msg.assistant {
+  background: white;
+  border: 1px solid #ddd;
+  margin-right: auto;
+  border-bottom-left-radius: 3px;
+}
+
+.gem-input-box {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+  background: white;
+  border-radius: 0 0 15px 15px;
+}
+
+#gem-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  outline: none;
+  font-size: 14px;
+}
+
+#gem-input:focus {
+  border-color: #667eea;
+}
+
+#send-btn {
+  margin-left: 8px;
+  padding: 10px 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+#send-btn:hover {
+  background: #5568d3;
+}
+
+#send-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.error-box {
+  background: #ffebee;
+  color: #c62828;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px;
+  border-left: 4px solid #c62828;
+}
+</style>
+</head>
+
+<body>
+
+<div id="menu">
+  <h3>📚 Dissertação</h3>
+  <div id="chapters"></div>
+</div>
+
+<div id="content">
+  <div id="controls">
+    <button class="btn" onclick="changeFont(1)" title="Aumentar fonte">A+</button>
+    <button class="btn" onclick="changeFont(-1)" title="Diminuir fonte">A-</button>
+  </div>
+  <div id="text">
+    <p style="text-align: center; color: #999; margin-top: 100px;">
+      🔄 Carregando dissertação...
+    </p>
+  </div>
+</div>
+
+<div id="gem-trigger" title="Abrir assistente">🤖</div>
+
+<div id="gem-chat-window">
+  <div id="gem-header">
+    <span>🤖 Assistente da Dissertação</span>
+    <span id="gem-close">✕</span>
+  </div>
+  <div id="gem-messages-area"></div>
+  <div class="gem-input-box">
+    <input id="gem-input" placeholder="Faça uma pergunta..." onkeypress="handleKeyPress(event)">
+    <button id="send-btn" onclick="send()">Enviar</button>
+  </div>
+</div>
+
+<script>
+// ⚠️ SUBSTITUA PELA URL DO SEU WEB APP
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx_523nfOLbO4XZBBvJe484-peoX0fTLMHLBoFFRTykI4bUJKmBRw2VnkbvRzThE847/exec";
+
+let chaptersData = {};
+let fontSize = 18;
+let currentChapter = null;
+let isLoading = false;
+
+// =================
+// CARREGAR CAPÍTULOS
+// =================
+async function loadChapters() {
+  console.log("Tentando carregar de:", WEBAPP_URL);
+  
+  try {
+    // Teste inicial
+    const testResp = await fetch(WEBAPP_URL);
+    console.log("Teste GET status:", testResp.status);
+    const testData = await testResp.json();
+    console.log("Resposta GET:", testData);
+    
+    // Carregar capítulos - CORRIGIDO: adicionado Content-Type
+    const resp = await fetch(WEBAPP_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"  // ✅ CRÍTICO para Apps Script
+      },
+      body: JSON.stringify({ action: "chapters" })
+    });
+    
+    console.log("POST status:", resp.status);
+    
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    }
+    
+    const text = await resp.text();
+    console.log("Resposta bruta:", text.substring(0, 200));
+    
+    chaptersData = JSON.parse(text);
+    console.log("Capítulos carregados:", Object.keys(chaptersData).length);
+    
+    renderMenu();
+  } catch (error) {
+    console.error("Erro completo:", error);
+    showError(error);
+  }
+}
+
+function showError(error) {
+  document.getElementById("text").innerHTML = `
+    <div class="error-box">
+      <h3>❌ Erro ao Carregar</h3>
+      <p><strong>Mensagem:</strong> ${error.message}</p>
+      <p><strong>URL configurada:</strong> ${WEBAPP_URL}</p>
+      <hr>
+      <h4>Checklist de Solução:</h4>
+      <ol>
+        <li>✅ Verifique se a URL termina com <code>/exec</code></li>
+        <li>✅ No Apps Script: Implantar → Nova implantação</li>
+        <li>✅ "Quem tem acesso" deve ser <strong>"Qualquer pessoa"</strong></li>
+        <li>✅ Autorize as permissões quando solicitado</li>
+        <li>✅ Aguarde 1-2 minutos após implantar</li>
+        <li>✅ Abra a URL no navegador para testar</li>
+      </ol>
+      <button class="btn" onclick="loadChapters()">🔄 Tentar Novamente</button>
+    </div>
+  `;
+}
+
+function renderMenu() {
+  const menu = document.getElementById("chapters");
+  menu.innerHTML = "";
+  
+  const sections = Object.keys(chaptersData);
+  if (sections.length === 0) {
+    menu.innerHTML = '<p style="color: #ccc;">⚠️ Nenhum capítulo encontrado</p>';
+    document.getElementById("text").innerHTML = `
+      <div class="error-box">
+        <h3>⚠️ Planilha Vazia</h3>
+        <p>A planilha foi encontrada mas não contém dados.</p>
+        <p>Verifique se a aba se chama: <strong>Dissertacao_RAG_format</strong></p>
+        <p>E se as colunas são: <strong>Seção</strong>, <strong>Texto</strong>, <strong>Embedding</strong></p>
+      </div>
+    `;
+    return;
+  }
+  
+  sections.forEach(sec => {
+    const div = document.createElement("div");
+    div.className = "chapter";
+    div.innerText = sec;
+    div.onclick = () => showChapter(sec);
+    menu.appendChild(div);
+  });
+  
+  showChapter(sections[0]);
+}
+
+function showChapter(sec) {
+  const blocks = chaptersData[sec];
+  if (!blocks || blocks.length === 0) return;
+  
+  document.querySelectorAll(".chapter").forEach(ch => {
+    ch.classList.remove("active");
+    if (ch.innerText === sec) ch.classList.add("active");
+  });
+  
+  currentChapter = sec;
+  
+  const html = "<h2>" + sec + "</h2>" + 
+    blocks.map(p => "<p>" + escapeHtml(p) + "</p>").join("");
+  
+  document.getElementById("text").innerHTML = html;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function changeFont(delta) {
+  fontSize += delta;
+  if (fontSize < 12) fontSize = 12;
+  if (fontSize > 28) fontSize = 28;
+  document.getElementById("content").style.fontSize = fontSize + "px";
+}
+
+// =================
+// CHAT
+// =================
+const trigger = document.getElementById("gem-trigger");
+const chat = document.getElementById("gem-chat-window");
+const closeBtn = document.getElementById("gem-close");
+const area = document.getElementById("gem-messages-area");
+
+trigger.onclick = () => chat.classList.add("active");
+closeBtn.onclick = () => chat.classList.remove("active");
+
+function handleKeyPress(event) {
+  if (event.key === "Enter" && !isLoading) {
+    send();
+  }
+}
+
+async function send() {
+  if (isLoading) return;
+  
+  const input = document.getElementById("gem-input");
+  const sendBtn = document.getElementById("send-btn");
+  const question = input.value.trim();
+  
+  if (!question) return;
+  
+  addMsg(question, "user");
+  input.value = "";
+  isLoading = true;
+  sendBtn.disabled = true;
+  
+  const loadingId = addMsg("🤔 Pensando...", "assistant");
+  
+  console.log("Enviando pergunta:", question); // Debug
+  
+  try {
+    // ✅ CORRIGIDO: adicionado Content-Type
+    const resp = await fetch(WEBAPP_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"  // ✅ CRÍTICO
+      },
+      body: JSON.stringify({ question: question })
+    });
+    
+    console.log("Resposta status:", resp.status); // Debug
+    
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      console.error("Erro da API:", errorText);
+      throw new Error(`HTTP ${resp.status}: ${errorText}`);
+    }
+    
+    const responseText = await resp.text();
+    console.log("Resposta bruta:", responseText.substring(0, 200)); // Debug
+    
+    const res = JSON.parse(responseText);
+    console.log("Resposta parseada:", res); // Debug
+    
+    removeMsg(loadingId);
+    
+    if (res.error) {
+      addMsg("❌ Erro: " + res.error, "assistant");
+      console.error("Erro retornado:", res.error);
+    } else if (res.answer) {
+      addMsg(res.answer, "assistant");
+      if (res.contexts && res.contexts.length > 0) {
+        console.log("Contextos:", res.contexts.length);
+        highlightContext(res.contexts[0]);
+      }
+    } else {
+      addMsg("❌ Resposta inválida do servidor", "assistant");
+      console.error("Resposta sem answer:", res);
+    }
+  } catch (error) {
+    removeMsg(loadingId);
+    addMsg("❌ Erro ao processar. Veja o console.", "assistant");
+    console.error("Erro detalhado:", error);
+  } finally {
+    isLoading = false;
+    sendBtn.disabled = false;
+  }
+}
+
+function addMsg(text, sender) {
+  const div = document.createElement("div");
+  div.className = "gem-msg " + sender;
+  div.innerText = text;
+  const id = Date.now();
+  div.id = "msg-" + id;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return id;
+}
+
+function removeMsg(id) {
+  const msg = document.getElementById("msg-" + id);
+  if (msg) msg.remove();
+}
+
+// =================
+// DESTAQUE
+// =================
+function highlightContext(context) {
+  if (!context || !context.sec || !context.txt) return;
+  
+  showChapter(context.sec);
+  
+  setTimeout(() => {
+    const textDiv = document.getElementById("text");
+    let html = textDiv.innerHTML;
+    
+    const fragment = context.txt.substring(0, 80);
+    const escapedFragment = escapeRegex(fragment);
+    
+    const regex = new RegExp(escapedFragment, "i");
+    html = html.replace(regex, match => 
+      `<span class="highlight">${match}</span>`
+    );
+    
+    textDiv.innerHTML = html;
+    
+    const highlighted = textDiv.querySelector(".highlight");
+    if (highlighted) {
+      highlighted.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, 300);
+}
+
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Inicializar
+loadChapters();
+</script>
+
+</body>
+</html>
