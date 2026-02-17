@@ -297,7 +297,7 @@ body {
 
 <script>
 // ⚠️ SUBSTITUA PELA URL DO SEU WEB APP
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxJCHJyaZjDWU_cKXSSQLITUkZbdljuQNaGMNM3jj5ypuQj99V2rQhbr3oir1uSzaVF/exec";
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzbFKK9QApt9J-Zf3tq72DQzVmU7KwUcdDe7A_Y7_C3BlCm-wMSN5NeeNGvbNA_F8US/exec";
 
 let chaptersData = {};
 let fontSize = 18;
@@ -479,7 +479,7 @@ async function send() {
     }
     
     const responseText = await resp.text();
-    console.log("Resposta bruta:", responseText.substring(0, 200)); // Debug
+    console.log("Resposta bruta:", responseText.substring(0, 500)); // Debug
     
     const res = JSON.parse(responseText);
     console.log("Resposta parseada:", res); // Debug
